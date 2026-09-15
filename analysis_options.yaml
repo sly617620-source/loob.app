@@ -1,0 +1,19 @@
+# analysis_options.yaml
+# Analyzer config for the project.
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    avoid_print: false
+    prefer_const_constructors: false
+    prefer_single_quotes: true

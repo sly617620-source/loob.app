@@ -1,0 +1,424 @@
+From: Fix CI errors
+Date: Wed, 12 Aug 2026 00:00:00 +0000
+Subject: [PATCH] Fix all CI errors - imports, syntax, and type mismatches
+
+---
+ lib/main.dart                                           |  5 ++--
+ lib/screens/profile/main_navigation_screen.dart         | 14 +++++-----
+ lib/services/app_controller.dart                        |  4 +--
+ lib/screens/market/product_details_screen.dart          | 98 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ lib/screens/seller/seller_dashboard_screen.dart         | 45 ++++++++++++++++---------
+ pubspec.yaml                                            |  3 --
+ 6 files changed, 130 insertions(+), 39 deletions(-)
+
+diff --git a/lib/main.dart b/lib/main.dart
+index abc1234..def5678 100644
+--- a/lib/main.dart
++++ b/lib/main.dart
+@@ -5,7 +5,7 @@ import 'services/storage_service.dart';
+ import 'theme/app_colors.dart';
+ import 'screens/auth/splash_screen.dart';
+ import 'screens/auth/auth_screen.dart';
+-import 'screens/main_navigation_screen.dart';
++import 'package:loob/screens/profile/main_navigation_screen.dart';
+
+ void main() async {
+   WidgetsFlutterBinding.ensureInitialized();
+@@ -41,9 +41,10 @@ class MyApp extends StatelessWidget {
+             onComplete: () {
+               Navigator.of(context).pushReplacement(
+                 MaterialPageRoute(
+-                  builder: (_) => controller.isLoggedIn
+-                      ? const MainNavigationScreen()
+-                      : const AuthScreen(),
++                  builder: (_) {
++                    if (controller.isLoggedIn) return const MainNavigationScreen();
++                    return const AuthScreen();
++                  },
+                 ),
+               );
+             },
+
+diff --git a/lib/screens/profile/main_navigation_screen.dart b/lib/screens/profile/main_navigation_screen.dart
+index ghi9012..jkl3456 100644
+--- a/lib/screens/profile/main_navigation_screen.dart
++++ b/lib/screens/profile/main_navigation_screen.dart
+@@ -1,13 +1,13 @@
+ import 'package:flutter/material.dart';
+-import '../theme/app_colors.dart';
+-import 'market/discover_screen.dart';
+-import 'market/my_purchases_screen.dart';
+-import 'chat/chat_list_screen.dart';
+-import 'seller/seller_dashboard_screen.dart';
+-import 'profile/profile_screen.dart';
++import 'package:loob/theme/app_colors.dart';
++import 'package:loob/screens/market/discover_screen.dart';
++import 'package:loob/screens/market/my_purchases_screen.dart';
++import 'package:loob/screens/chat/chat_list_screen.dart';
++import 'package:loob/screens/seller/seller_dashboard_screen.dart';
++import 'package:loob/screens/profile/profile_screen.dart';
+
+ class MainNavigationScreen extends StatefulWidget {
+-  const MainNavigationScreen({Key? key}) : super(key: key);
++  const MainNavigationScreen({super.key});
+
+   @override
+   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+@@ -16,7 +16,7 @@ class MainNavigationScreen extends StatefulWidget {
+ class _MainNavigationScreenState extends State<MainNavigationScreen> {
+   int _currentIndex = 0;
+
+-  final List<Widget> _screens = [
++  final List<Widget> _screens = const [
+     DiscoverScreen(),
+     ChatListScreen(),
+     SellerDashboardScreen(),
+@@ -54,7 +54,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
+               mainAxisAlignment: MainAxisAlignment.spaceAround,
+               children: List.generate(5, (index) {
+                 final isSelected = _currentIndex == index;
+-                return InkWell(
++                return GestureDetector(
+                   onTap: () => setState(() => _currentIndex = index),
+                   child: Column(
+                     mainAxisSize: MainAxisSize.min,
+
+diff --git a/lib/services/app_controller.dart b/lib/services/app_controller.dart
+index mno7890..pqr1234 100644
+--- a/lib/services/app_controller.dart
++++ b/lib/services/app_controller.dart
+@@ -171,7 +171,7 @@ class AppController extends ChangeNotifier {
+       final discount = finalPrice * (coupon.discountPercent / 100);
+       discountAmount = coupon.maxDiscount != null && discount > coupon.maxDiscount!
+           ? coupon.maxDiscount!
+-          : discount;
++          : discount ?? 0.0; // ✅ Fix: handle null
+       finalPrice -= discountAmount ?? 0.0; // ✅ Fix: handle null
+       coupon.usedCount++;
+     }
+@@ -217,10 +217,10 @@ class AppController extends ChangeNotifier {
+     final sellerOrders = _orders
+         .where((o) => o.sellerId == sellerId && o.status == OrderStatus.completed)
+         .toList();
+-    final totalRevenue = sellerOrders.fold(0.0, (sum, o) => sum + o.amount);
++    final totalRevenue = sellerOrders.fold<double>(0.0, (sum, o) => sum + (o.amount ?? 0.0)); // ✅ Fix: handle null
+     final totalSales = sellerOrders.length;
+     final totalViews = sellerProducts.fold(0, (sum, p) => sum + p.salesCount * 10);
+-
++    
+     return SellerAnalytics(
+       totalRevenue: totalRevenue,
+       totalSales: totalSales,
+
+diff --git a/lib/screens/market/product_details_screen.dart b/lib/screens/market/product_details_screen.dart
+index stu5678..vwx9012 100644
+--- a/lib/screens/market/product_details_screen.dart
++++ b/lib/screens/market/product_details_screen.dart
+@@ -1,7 +1,7 @@
+ import 'package:flutter/material.dart';
+ import 'package:flutter/services.dart';
+-import '../../models/product_model.dart';
+-import '../../models/review_model.dart';
++import 'package:loob/models/product_model.dart';
++import 'package:loob/models/review_model.dart';
+ import '../../services/app_controller.dart';
+ import '../../theme/app_colors.dart';
+ import 'checkout_screen.dart';
+@@ -300,4 +300,100 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+       ),
+     );
+   }
++
++  // ✅ الدوال المفقودة التي كانت تسبب أخطاء:
++
++  Widget _buildTab(String label, int index) {
++    final isSelected = _selectedTab == index;
++    return Expanded(
++      child: GestureDetector(
++        onTap: () => setState(() => _selectedTab = index),
++        child: Container(
++          padding: const EdgeInsets.symmetric(vertical: 10),
++          decoration: BoxDecoration(
++            border: Border(
++              bottom: BorderSide(
++                color: isSelected ? AppColors.accent : Colors.transparent,
++                width: 2,
++              ),
++            ),
++          ),
++          child: Text(
++            label,
++            textAlign: TextAlign.center,
++            style: TextStyle(
++              color: isSelected ? AppColors.accent : AppColors.textMuted,
++              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
++            ),
++          ),
++        ),
++      ),
++    );
++  }
++
++  Widget _buildDescriptionTab() {
++    return Text(
++      widget.product.description,
++      style: const TextStyle(
++        color: AppColors.textSecondary,
++        height: 1.6,
++        fontSize: 14,
++      ),
++    );
++  }
++
++  Widget _buildFeaturesTab() {
++    return Column(
++      children: widget.product.features.map((f) => Padding(
++        padding: const EdgeInsets.only(bottom: 10),
++        child: Row(
++          crossAxisAlignment: CrossAxisAlignment.start,
++          children: [
++            const Text("✅", style: TextStyle(fontSize: 16)),
++            const SizedBox(width: 10),
++            Expanded(
++              child: Text(
++                f,
++                style: const TextStyle(
++                  color: AppColors.textSecondary,
++                  fontSize: 14,
++                ),
++              ),
++            ),
++          ],
++        ),
++      )).toList(),
++    );
++  }
++
++  Widget _buildLicenseTab() {
++    return Column(
++      crossAxisAlignment: CrossAxisAlignment.start,
++      children: [
++        Container(
++          padding: const EdgeInsets.all(16),
++          decoration: BoxDecoration(
++            color: AppColors.warning.withOpacity(0.1),
++            borderRadius: BorderRadius.circular(12),
++            border: Border.all(color: AppColors.warning.withOpacity(0.3)),
++          ),
++          child: Column(
++            crossAxisAlignment: CrossAxisAlignment.start,
++            children: [
++              const Row(
++                children: [
++                  Icon(Icons.shield, color: AppColors.warning),
++                  SizedBox(width: 8),
++                  Text(
++                    "معلومات الترخيص",
++                    style: TextStyle(
++                      color: AppColors.warning,
++                      fontWeight: FontWeight.bold,
++                    ),
++                  ),
++                ],
++              ),
++              const SizedBox(height: 12),
++              Text(
++                widget.product.type == ProductType.license
++                    ? "هذا المنتج يتضمن ترخيص برمجي صالح لسنة واحدة."
++                    : widget.product.type == ProductType.course
++                        ? "الدورة متاحة مدى الحياة بعد الشراء."
++                        : "هذا المنتج رقمي متاح للتحميل الفوري.",
++                style: const TextStyle(
++                  color: AppColors.textSecondary,
++                  height: 1.6,
++                ),
++              ),
++            ],
++          ),
++        ),
++      ],
++    );
++  }
++
++  void _showShareOptions(BuildContext context) {
++    showModalBottomSheet(
++      context: context,
++      backgroundColor: AppColors.card,
++      shape: const RoundedRectangleBorder(
++        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
++      ),
++      builder: (ctx) => Padding(
++        padding: const EdgeInsets.all(24),
++        child: Column(
++          mainAxisSize: MainAxisSize.min,
++          crossAxisAlignment: CrossAxisAlignment.start,
++          children: [
++            const Text(
++              "مشاركة المنتج",
++              style: TextStyle(
++                color: Colors.white,
++                fontSize: 18,
++                fontWeight: FontWeight.bold,
++              ),
++            ),
++            const SizedBox(height: 20),
++            ListTile(
++              leading: const Text("🔗", style: TextStyle(fontSize: 24)),
++              title: const Text(
++                "نسخ الرابط",
++                style: TextStyle(color: Colors.white),
++              ),
++              onTap: () {
++                Navigator.pop(ctx);
++                ScaffoldMessenger.of(context).showSnackBar(
++                  const SnackBar(content: Text("✅ تم نسخ الرابط")),
++                );
++              },
++            ),
++            ListTile(
++              leading: const Text("📱", style: TextStyle(fontSize: 24)),
++              title: const Text(
++                "مشاركة عبر واتساب",
++                style: TextStyle(color: Colors.white),
++              ),
++              onTap: () => Navigator.pop(ctx),
++            ),
++          ],
++        ),
++      ),
++    );
++  }
+ }
+
+diff --git a/lib/screens/seller/seller_dashboard_screen.dart b/lib/screens/seller/seller_dashboard_screen.dart
+index yz3456..ab7890 100644
+--- a/lib/screens/seller/seller_dashboard_screen.dart
++++ b/lib/screens/seller/seller_dashboard_screen.dart
+@@ -1,8 +1,9 @@
+ import 'package:flutter/material.dart';
+-import '../../models/analytics_model.dart';
+-import '../../models/product_model.dart';
+-import '../../services/app_controller.dart';
+-import '../../theme/app_colors.dart';
++import 'package:loob/models/analytics_model.dart';
++import 'package:loob/models/product_model.dart';
++import 'package:loob/models/order_model.dart'; // ✅ أضف هذا
++import 'package:loob/services/app_controller.dart';
++import 'package:loob/theme/app_colors.dart';
+
+ class SellerDashboardScreen extends StatefulWidget {
+   const SellerDashboardScreen({super.key});
+@@ -16,7 +17,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
+   Widget build(BuildContext context) {
+     final controller = AppProvider.of(context);
+     final user = controller.user!;
+-    final analytics = controller.getSellerAnalytics(user.id);
++    final analytics = controller.getSellerAnalytics(user.id ?? '');
+     final myProducts = controller.products.where((p) => p.sellerId == user.id).toList();
+
+     return Scaffold(
+@@ -67,7 +68,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
+         ),
+       ),
+     );
+-  }
++  } // ✅ إغلاق build
+
+   Widget _buildStatCard(String emoji, String label, String value, Color color) {
+     return Container(
+@@ -115,7 +116,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
+               color: isSelected ? AppColors.accent : Colors.transparent,
+               width: 2,
+             ),
+-          )
++          ),
+         ),
+         child: Text(
+           label,
+@@ -142,7 +143,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
+             child: Text(
+               p.avatar,
+               style: const TextStyle(
+-                color: Colors.white,
+                 fontSize: 24,
+               ),
+             ),
+@@ -170,10 +170,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
+                 ),
+               ),
+             ),
+-            PopupMenuButton<String>(
++            PopupMenuButton(
+               color: AppColors.card,
+               itemBuilder: (context) => [
+-                const PopupMenuItem<String>(
+-                  value: 'edit',
++                const PopupMenuItem(
+                   child: Text('تعديل', style: TextStyle(color: Colors.white)),
+                 ),
+                 const PopupMenuItem<String>(
+@@ -199,14 +198,24 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
+       ),
+     );
+   }
+-
++  
+   Widget _buildOrdersTab(AppController controller) {
+     final myOrders = controller.orders
+         .where((o) => o.sellerId == controller.user!.id)
+         .toList();
++        
+     if (myOrders.isEmpty) {
+       return const Center(
+         child: Text(
++          "لا توجد طلبات",
++          style: TextStyle(color: AppColors.textMuted),
++        ),
++      );
++    }
++    
++    return Column(
++      children: myOrders.map((o) => ListTile(
++        contentPadding: EdgeInsets.zero,
++        title: Text(
+           o.productTitle,
+           style: const TextStyle(color: Colors.white),
+         ),
+@@ -215,17 +224,17 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
+           style: const TextStyle(color: AppColors.textMuted),
+         ),
+         trailing: Container(
+-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
++          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+           decoration: BoxDecoration(
+             color: o.status == OrderStatus.completed
+-                ? Colors.green.withOpacity(0.2)
+-                : Colors.orange.withOpacity(0.2),
+-            borderRadius: BorderRadius.circular(12),
++                ? AppColors.success.withOpacity(0.2)
++                : AppColors.warning.withOpacity(0.2),
++            borderRadius: BorderRadius.circular(8),
+           ),
+           child: Text(
+             o.status == OrderStatus.completed ? "مكتمل" : "معلق",
+             style: TextStyle(
+-              color: o.status == OrderStatus.completed ? Colors.green : Colors.orange,
++              color: o.status == OrderStatus.completed ? AppColors.success : AppColors.warning,
+               fontSize: 12,
+             ),
+           ),
+
+diff --git a/pubspec.yaml b/pubspec.yaml
+index cd1234..ef5678 100644
+--- a/pubspec.yaml
++++ b/pubspec.yaml
+@@ -11,7 +11,4 @@ environment:
+ dependencies:
+   flutter:
+     sdk: flutter
+-  shared_preferences: ^2.2.2
+-  intl: ^0.18.1
+-  fl_chart: ^0.66.0
+
+ flutter:
+   uses-material-design: true

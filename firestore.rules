@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId} {
+      // Unchanged from the rule already live on this project: any signed-in
+      // user can read, create, or delete a user document. Not tightened
+      // here - see the note sent alongside this file about why that's
+      // worth revisiting separately, on purpose, rather than bundled into
+      // this change.
+      allow read, create, delete: if request.auth != null;
+
+      // The only actual change: `role` (account type), once set, can never
+      // be changed by a client-issued update - matches "لا يمكن تعديله
+      // إلا بطلب من إدارة التطبيق". Every other field on the user's own
+      // document can still be updated freely, same as before.
+      allow update: if request.auth != null
+                    && request.resource.data.role == resource.data.role;
+    }
+
+    // Every other collection (products, campaigns, submissions, orders,
+    // chatRooms/messages, paymentMethods, licenses, affiliateSales, etc.)
+    // keeps EXACTLY the permissiveness the live rule already had.
+    //
+    // This has to explicitly exclude `users` (`collection != 'users'`)
+    // rather than just leaving the old `match /{document=**}` in place
+    // alongside the block above: Firestore evaluates every `match` block
+    // that matches a given path and grants access if ANY of them allow it
+    // (rules OR together, they don't override each other by specificity
+    // or order). A leftover unscoped catch-all here would still say "yes"
+    // for /users/** and silently undo the role lock above.
+    match /{collection}/{document=**} {
+      allow read, write: if request.auth != null && collection != 'users';
+    }
+  }
+}
