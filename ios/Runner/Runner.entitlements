@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+	<!-- Apple Pay عبر Stripe PaymentSheet — استبدل merchant.com.wolf.loob بمعرّف
+	     التاجر الفعلي الذي تنشئه من Apple Developer > Merchant IDs، ثم اربطه
+	     أيضاً بحساب Stripe من Dashboard > Settings > Payment methods > Apple Pay -->
+	<key>com.apple.developer.in-app-payments</key>
+	<array>
+		<string>merchant.com.wolf.loob</string>
+	</array>
+</dict>
+</plist>
