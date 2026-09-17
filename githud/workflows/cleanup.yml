@@ -1,0 +1,30 @@
+name: Cleanup old artifacts
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # كل أحد الساعة 3 صباحاً
+permissions:
+  actions: write
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete artifacts older than 7 days
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          API="https://api.github.com/repos/hrbalhmran-coder/loob/actions/artifacts"
+          now=$(date -u +%s)
+          page=1
+          while true; do
+            resp=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" "$API?page=$page&per_page=100")
+            count=$(echo "$resp" | jq '.artifacts | length')
+            [ "$count" -eq 0 ] && break
+            echo "$resp" | jq -c '.artifacts[]' | while read -r art; do
+              id=$(echo "$art" | jq -r '.id')
+              created_at=$(echo "$art" | jq -r '.created_at')
+              created_ts=$(date -d "$created_at" +%s)
+              age=$(( (now - created_ts) / 86400 ))
+              [ "$age" -ge 7 ] && curl -s -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" "$API/$id" && echo "Deleted $id ($age days)"
+            done
+            page=$((page+1))
+          done
