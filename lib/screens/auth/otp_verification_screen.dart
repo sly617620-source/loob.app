@@ -75,7 +75,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   late final AnimationController _shakeController;
 
   _OtpStage _stage = _OtpStage.input;
-  final List<_Particle> _particles = [];
+  final List<OtpParticle> _particles = [];
   final Random _rng = Random();
 
   int _resendCooldown = 30;
@@ -158,7 +158,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   void _spawnConfetti() {
     _particles
       ..clear()
-      ..addAll(List.generate(28, (_) => _Particle.random(_rng)));
+      ..addAll(List.generate(28, (_) => OtpParticle.random(_rng)));
     _confettiController.forward(from: 0);
   }
 
@@ -312,7 +312,7 @@ class OtpInputSection extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             "We've sent a 4-digit code to $phoneNumber. It'll auto-verify "
-            "once entered.",
+            'once entered.',
             style: const TextStyle(
               color: _OtpPalette.textSecondary,
               fontSize: 15,
@@ -500,7 +500,7 @@ class _OtpBox extends StatelessWidget {
             boxShadow: isFocused
                 ? [
                     BoxShadow(
-                      color: _OtpPalette.accent.withOpacity(0.45),
+                      color: _OtpPalette.accent.withValues(alpha: 0.45),
                       blurRadius: 16,
                       spreadRadius: 1,
                     ),
@@ -544,7 +544,7 @@ class _OtpBox extends StatelessWidget {
 
 /// Shown once [onVerify] resolves successfully.
 class SuccessVerificationView extends StatefulWidget {
-  final List<_Particle> particles;
+  final List<OtpParticle> particles;
   final AnimationController confettiController;
 
   const SuccessVerificationView({
@@ -592,7 +592,7 @@ class _SuccessVerificationViewState extends State<SuccessVerificationView>
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: _OtpPalette.success.withOpacity(0.15),
+                color: _OtpPalette.success.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
                   color: _OtpPalette.success,
@@ -651,7 +651,7 @@ class _SuccessVerificationViewState extends State<SuccessVerificationView>
 }
 
 /// A single confetti/particle used by [_ConfettiPainter].
-class _Particle {
+class OtpParticle {
   final double startX; // 0..1, fraction of screen width
   final double startY; // 0..1, fraction of screen height
   final double angle;
@@ -659,7 +659,7 @@ class _Particle {
   final double size;
   final Color color;
 
-  _Particle({
+  OtpParticle({
     required this.startX,
     required this.startY,
     required this.angle,
@@ -676,8 +676,8 @@ class _Particle {
     Colors.white,
   ];
 
-  factory _Particle.random(Random rng) {
-    return _Particle(
+  factory OtpParticle.random(Random rng) {
+    return OtpParticle(
       startX: 0.5 + (rng.nextDouble() - 0.5) * 0.1,
       startY: 0.42,
       angle: rng.nextDouble() * 2 * pi,
@@ -691,7 +691,7 @@ class _Particle {
 /// Pure-Dart particle burst painter - no external confetti package
 /// required, so this file has zero extra dependencies.
 class _ConfettiPainter extends CustomPainter {
-  final List<_Particle> particles;
+  final List<OtpParticle> particles;
   final double progress; // 0..1
 
   _ConfettiPainter({required this.particles, required this.progress});
@@ -707,7 +707,7 @@ class _ConfettiPainter extends CustomPainter {
       final x = p.startX * size.width + dx;
       final y = p.startY * size.height + dy;
 
-      final paint = Paint()..color = p.color.withOpacity(fade);
+      final paint = Paint()..color = p.color.withValues(alpha: fade);
       canvas.drawCircle(Offset(x, y), p.size * (1 - progress * 0.3), paint);
     }
   }
