@@ -202,7 +202,7 @@ class _CustomFloatingNavBarState extends State<CustomFloatingNavBar>
                       borderRadius: BorderRadius.circular(widget.height / 2),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.14),
+                          color: Colors.black.withValues(alpha: 0.14),
                           blurRadius: 24,
                           offset: const Offset(0, 12),
                         ),
@@ -327,7 +327,7 @@ class _FloatingBadge extends StatelessWidget {
           border: Border.all(color: Colors.white, width: 3),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.45),
+              color: color.withValues(alpha: 0.45),
               blurRadius: elevated ? 18 : 12,
               offset: const Offset(0, 6),
             ),
